@@ -184,3 +184,20 @@ approved, rejected and left pending at shutdown; the read marker; and a group
 whose messages all live in topics, with its review. A card pressed by another
 member and sender names keep 0.2.3's handling and are not checked by hand.
 Record the CI run and the local check as acceptance evidence.
+
+## Local validation
+
+Ruff and format checks, Pyright CLI and the language-server check pass. Nine
+tests pass, including independent wheel and sdist installations that load
+`lark-builder` and register it in a real ContribHub with both credential
+configuration forms. Blockbuster is active in pytest and both installed-package
+subprocesses; protobug reads the declaring module's source when it declares the
+frames, so the transport declares them on a worker thread when it starts.
+Markdown splitting, mentions, rich posts, resource names, filesystem
+attachments, a recorded frame and the identities 0.2.3 stored are exercised
+with real data and files. Against the real platform, the Channel connected with
+the test app, received the driver bot's message in the test group and answered
+it through the shared sender. A manual run with the test app and a person
+confirmed group review and the read marker, a card approved and one rejected,
+a pending card closed when the node stopped, a topic opened by a reply to a
+quoted message following its approved group, and review in a direct chat.

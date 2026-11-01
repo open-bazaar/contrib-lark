@@ -1,0 +1,47 @@
+[project]
+name = "bazaar-contrib-lark"
+version = "0.3.0rc1"
+description = "Lark Channel provider for Bazaar Compute Node"
+requires-python = ">=3.15"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dependencies = [
+    "bazaar-core~=0.3.0rc13",
+    "bazaar-contrib-audit~=0.3.0rc13",
+    "bazaar-contrib-channel~=0.3.0rc13",
+    "bazaar-contrib-collaboration~=0.3.0rc13",
+    "bazaar-contrib-harness~=0.3.0rc13",
+    "bazaar-contrib-messages~=0.3.0rc13",
+    "bazaar-contrib-timer~=0.3.0rc13",
+    "aiohttp>=3.12.0",
+    "protobug==1.0.0",
+    "pydantic>=2.12.0",
+]
+
+[project.urls]
+Repository = "https://github.com/open-bazaar/contrib-lark"
+
+[project.entry-points."bazaar_compute_node.contribs"]
+lark-builder = "bazaar_contrib_lark:builder"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["bazaar-contrib-timer-wheel>=0.3.0rc10,<0.4", "ruff>=0.9.0", "pyright==1.1.414", "pytest>=8.3.0", "pytest-asyncio>=0.24.0", "blockbuster>=1.5.29,<1.6"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:anyio"
+asyncio_mode = "auto"
+markers = ["e2e: requires dedicated real Lark apps and a test group"]
+
+[tool.ruff.lint]
+extend-select = ["ASYNC"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.15"
+typeCheckingMode = "basic"
