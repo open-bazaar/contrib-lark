@@ -201,3 +201,13 @@ it through the shared sender. A manual run with the test app and a person
 confirmed group review and the read marker, a card approved and one rejected,
 a pending card closed when the node stopped, a topic opened by a reply to a
 quoted message following its approved group, and review in a direct chat.
+The `e2e` test passes locally against the two dedicated apps and the test group
+in about 140 seconds with BCN `0.3.0rc13`: all eight cases, twice in a row.
+Neither app's secret appears in any file the run leaves, logs and journal
+included. By hand, a direct conversation answered a quote with the quoted
+message's text and sent back an image posted with text. In a group whose
+messages all live in topics, the first topic brought two `review.reply` posts,
+one into the group as a topic of its own and one into the topic through its
+root; once both conversations were approved, the agent read the group's message
+without a reaction or an error and answered in the topic, and a second topic
+opened approved and was answered without review.
