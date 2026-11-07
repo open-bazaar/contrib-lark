@@ -185,6 +185,29 @@ whose messages all live in topics, with its review. A card pressed by another
 member and sender names keep 0.2.3's handling and are not checked by hand.
 Record the CI run and the local check as acceptance evidence.
 
+## Task 3: Form words and connection events
+
+BCN stage 13 draws every channel's configuration form from the schema of its
+entity model and reports each connection's state from shared connection events,
+per messages `25fe9d74-6015-5615-b26a-1021b11d8792`, `7ce989b2-cd0f-577c-9648-97f4153dc2c5`
+and `beb133fa-5a23-56d3-b225-f18f5a665270`. The words of the form live in
+`resources/locales/en.toml` and `zh-CN.toml`, keyed by field: `<field>.title`,
+`<field>.description` and, for a field that can stay empty, `<field>.empty`.
+`Config` carries both under `x-locales` at the top of its schema; `app_secret` is
+marked `writeOnly`. Each region has its own key,
+`region.feishu` and `region.lark`.
+
+The transport publishes `ChannelConnected` with the bot's identity on every
+connection, and `ChannelConnectionFailed` with the error on every failure: with
+the delay before the next attempt, or without one when it stops trying, which
+at startup is a rejected request or the end of the startup budget, and later an
+authentication failure or more attempts than the reconnect count Lark gives.
+They replace the service id and attempt counters the events carried. The agent
+names the connection on them, so the Channel does not. `bazaar-contrib-channel`
+moves to `~=0.3.0rc20`, and the tests install `bazaar-compute-node>=0.3.0rc20`.
+The `e2e` test checks that the node reports itself connected on `lark:0` with
+the bot's identity.
+
 ## Local validation
 
 Ruff and format checks, Pyright CLI and the language-server check pass. Nine

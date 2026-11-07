@@ -221,7 +221,7 @@ async def test_installed_node_over_real_lark(tmp_path: Path):
         "--refresh",
         "--default-index",
         "https://pypi.org/simple",
-        "bazaar-compute-node>=0.3.0rc13,<0.4",
+        "bazaar-compute-node>=0.3.0rc19,<0.4",
         "--with",
         str(provider),
         "--with",
@@ -367,6 +367,9 @@ async def test_installed_node_over_real_lark(tmp_path: Path):
 
         try:
             await start("config-filesystem")
+            connected = (await connections())[-1]
+            assert connected["context"]["connection"] == "lark:0"
+            assert connected["payload"]["identity"]["id"]
 
             marker = "e2e-" + secrets.token_hex(6)
             await driver.send(chat, "text", {"text": f"{marker} open"})

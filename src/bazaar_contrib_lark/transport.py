@@ -14,6 +14,11 @@ from dataclasses import dataclass, field
 
 import aiohttp
 from bazaar_contrib_audit import AuditError
+from bazaar_contrib_channel import (
+    ChannelConnected,
+    ChannelConnectionFailed,
+    ChannelIdentity,
+)
 from bazaar_contrib_timer import Timer
 from pydantic import JsonValue
 
@@ -74,6 +79,7 @@ class LarkTransport:
         timer: Timer,
         group: asyncio.TaskGroup,
         *,
+        identity: ChannelIdentity,
         on_event: Callable[[Mapping[str, object]], None],
         on_card: Callable[[Mapping[str, object]], Awaitable[CardAnswer]],
         publish: Publish,
@@ -81,6 +87,7 @@ class LarkTransport:
         self._api = api
         self._timer = timer
         self._group = group
+        self._identity = identity
         self._on_event = on_event
         self._on_card = on_card
         self._publish = publish
@@ -152,31 +159,39 @@ class LarkTransport:
                 self._connection = None
                 if self._stopping.is_set():
                     return
+                if first:
+                    delay_ms = (
+                        None
+                        if isinstance(error, (LarkApiError, ValueError))
+                        or self._timer.now_ms + _STARTUP_RETRY_MS >= startup_deadline_ms
+                        else _STARTUP_RETRY_MS
+                    )
+                else:
+                    attempts += 1
+                    config = self._config()
+                    delay_ms = (
+                        None
+                        if _is_authentication_error(error)
+                        or (
+                            config.reconnect_count >= 0
+                            and attempts > config.reconnect_count
+                        )
+                        else _delay_ms(random.uniform(0.0, config.reconnect_nonce))
+                        + _delay_ms(config.reconnect_interval)
+                    )
                 await self._publish(
-                    "channel.connection.failed",
-                    {"first_connection": first, "attempt": attempts + 1},
+                    ChannelConnectionFailed.event_name,
+                    ChannelConnectionFailed(retry_in_ms=delay_ms).model_dump(
+                        mode="json"
+                    ),
                     AuditError(kind=_error_kind(error), message=str(error)),
                 )
-                if first:
-                    if (
-                        isinstance(error, (LarkApiError, ValueError))
-                        or self._timer.now_ms + _STARTUP_RETRY_MS >= startup_deadline_ms
-                    ):
+                if delay_ms is None:
+                    if first:
                         self._startup_error = error
                         self._connected.set()
-                        return
-                    await self._timer.create(_STARTUP_RETRY_MS).wait()
-                    continue
-                attempts += 1
-                config = self._config()
-                if _is_authentication_error(error) or (
-                    config.reconnect_count >= 0 and attempts > config.reconnect_count
-                ):
                     return
-                await self._timer.create(
-                    _delay_ms(random.uniform(0.0, config.reconnect_nonce))
-                ).wait()
-                await self._timer.create(_delay_ms(config.reconnect_interval)).wait()
+                await self._timer.create(delay_ms).wait()
 
     async def _serve(self, endpoint: LarkEndpoint) -> None:
         connection = await self._api.session.ws_connect(
@@ -192,8 +207,8 @@ class LarkTransport:
         )
         try:
             await self._publish(
-                "channel.connection.connected",
-                {"service_id": endpoint.service_id},
+                ChannelConnected.event_name,
+                ChannelConnected(identity=self._identity).model_dump(mode="json"),
                 None,
             )
             self._connected.set()
