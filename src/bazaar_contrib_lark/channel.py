@@ -211,6 +211,7 @@ class LarkChannel:
                 api,
                 self._timer,
                 self._group,
+                identity=identity.as_channel_identity(),
                 on_event=self._events.put_nowait,
                 on_card=self._answer_card,
                 publish=self._publish,
