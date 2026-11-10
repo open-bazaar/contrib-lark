@@ -247,7 +247,6 @@ async def test_installed_node_over_real_lark(tmp_path: Path):
                     {
                         "id": "lark-test",
                         "name": "Lark Test",
-                        "workspace": str(tmp_path / "workspace"),
                         "mode": "dangerous_individual",
                         "channel": [
                             {
