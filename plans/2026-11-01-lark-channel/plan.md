@@ -234,3 +234,15 @@ one into the group as a topic of its own and one into the topic through its
 root; once both conversations were approved, the agent read the group's message
 without a reaction or an error and answered in the topic, and a second topic
 opened approved and was answered without review.
+
+## Reconnect after the first established connection drops
+
+The first call to `_serve` can keep running beyond the startup deadline. Read
+the connected event again in the exception handler, as 0.2.3 did with its ready
+event, so a later disconnect follows Lark's reconnect configuration instead of
+the expired startup budget. Retain the existing startup and reconnect policies.
+
+The real-platform E2E run closes the isolated node's established TLS sockets
+with Linux `ss -K` after the message cases and the 60-second startup budget. The existing test Audit plugin must
+observe another connection, with no terminal connection failure, and the driver
+must receive a reply after recovery. No production test hook is introduced.
