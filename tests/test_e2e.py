@@ -366,6 +366,7 @@ async def test_installed_node_over_real_lark(tmp_path: Path):
 
         try:
             await start("config-filesystem")
+            first_connected_at = asyncio.get_running_loop().time()
             connected = (await connections())[-1]
             assert connected["context"]["connection"] == "lark:0"
             assert connected["payload"]["identity"]["id"]
@@ -456,6 +457,49 @@ async def test_installed_node_over_real_lark(tmp_path: Path):
             )
             assert topic["payload"]["metadata"]["review"] == "approved"
             await posted(answers(f"{marker} reply"), asked["thread_id"])
+
+            # Drop only this isolated node's real TLS sockets. Observe recovery
+            # through the test plugin's Audit journal, then exchange a message.
+            await asyncio.sleep(
+                max(0, first_connected_at + 60 - asyncio.get_running_loop().time())
+            )
+            connected_count = len(await connections())
+            assert connected_count == 1
+            sockets = await execute("sockets", "ss", "-Hntp")
+            endpoints = [
+                line.split()[3:5]
+                for line in sockets.splitlines()
+                if f"pid={running[0].pid}," in line and line.split()[4].endswith(":443")
+            ]
+            assert endpoints
+            for number, (local, peer) in enumerate(endpoints):
+                await execute(
+                    f"disconnect-{number}",
+                    "sudo",
+                    "-n",
+                    "ss",
+                    "-K",
+                    "src",
+                    local,
+                    "dst",
+                    peer,
+                )
+            async with asyncio.timeout(WAIT_SECONDS):
+                while len(await connections()) == connected_count:
+                    failures = [
+                        event
+                        for event in await journal(events)
+                        if event["event_name"] == "channel.connection.failed"
+                    ]
+                    assert all(
+                        event["payload"]["retry_in_ms"] is not None
+                        for event in failures
+                    ), failures
+                    await asyncio.sleep(0.5)
+            marker = "e2e-" + secrets.token_hex(6)
+            asked = await driver.send(chat, "text", {"text": f"{marker} reply"})
+            answer = await posted(answers(f"{marker} reply"))
+            assert answer.get("parent_id") == asked["message_id"]
 
             await stop()
             await start("config-env-token")

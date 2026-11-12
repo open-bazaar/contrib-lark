@@ -159,6 +159,7 @@ class LarkTransport:
                 self._connection = None
                 if self._stopping.is_set():
                     return
+                first = not self._connected.is_set()
                 if first:
                     delay_ms = (
                         None
