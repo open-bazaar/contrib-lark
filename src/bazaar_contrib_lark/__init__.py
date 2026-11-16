@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import tomllib
 from contextlib import asynccontextmanager
@@ -17,6 +18,7 @@ from bazaar_contrib_channel import (
     CHANNEL_INPUT,
     CHANNEL_TURN,
     ChannelBuilderConfig,
+    ChannelTarget,
     ChannelTurn,
     channel_builder_key,
 )
@@ -27,6 +29,7 @@ from bazaar_core import Context, Contrib
 from pydantic import BaseModel, ConfigDict, Field
 
 from .channel import LarkChannel
+from .identity import parse_provider_thread_id
 
 _REGION_BASE_URLS = {
     "feishu": "https://open.feishu.cn",
@@ -103,6 +106,18 @@ class BuilderConfig(ChannelBuilderConfig):
     kind: ClassVar[str] = "lark"
     entity_model: ClassVar[type[BaseModel]] = Config
     entry: ClassVar[Contrib[Any]] = channel
+
+    @classmethod
+    def conversation_key(
+        cls, target: ChannelTarget, configs: tuple[dict[str, Any], ...] = ()
+    ) -> str | None:
+        if target.kind != "group":
+            return None
+        regions = {Config.model_validate(config).region for config in configs}
+        if len(regions) != 1:
+            return None
+        address = parse_provider_thread_id(target.thread_id)
+        return json.dumps((regions.pop(), address.chat_id, address.thread_id))
 
 
 @asynccontextmanager
